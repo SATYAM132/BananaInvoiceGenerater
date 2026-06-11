@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shri Radhakrishna Fruits – Invoice Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --saffron: #E8761A;
+    --saffron-light: #FFF4EA;
+    --saffron-dark: #C05E0D;
+    --green: #2D6A4F;
+    --green-light: #EAF4EF;
+    --ink: #1A1A2E;
+    --ink-soft: #4A4A6A;
+    --border: #E2E0DA;
+    --surface: #FAFAF8;
+    --white: #FFFFFF;
+    --red: #D64045;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  .nav {
+    background: var(--white);
+    border-bottom: 2px solid var(--saffron);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(232,118,26,0.08);
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .nav-logo {
+    width: 38px; height: 38px;
+    background: var(--saffron);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .nav-title {
+    font-family: 'Noto Serif', serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .nav-sub { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 4px;
+    border: 1px solid var(--border);
+  }
+  .nav-tab {
+    padding: 8px 20px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    border: none;
+    background: transparent;
+    transition: all 0.18s;
+  }
+  .nav-tab.active {
+    background: var(--saffron);
+    color: white;
+    box-shadow: 0 2px 8px rgba(232,118,26,0.3);
+  }
+  .nav-tab:hover:not(.active) { background: var(--saffron-light); color: var(--saffron-dark); }
+
+  /* PAGES */
+  .page { display: none; padding: 32px; max-width: 860px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* FORM PAGE */
+  .page-header {
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header h1 {
+    font-family: 'Noto Serif', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .page-header p { font-size: 14px; color: var(--ink-soft); }
+
+  .section-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--saffron);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--saffron-light);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .form-grid.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .span-2 { grid-column: span 2; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .field input, .field select {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+    background: var(--white);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--saffron);
+    box-shadow: 0 0 0 3px rgba(232,118,26,0.12);
+  }
+  .field input.auto {
+    background: var(--surface);
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  /* ROW TABLE */
+  .row-table { width: 100%; border-collapse: collapse; }
+  .row-table th {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 6px 8px 10px;
+    text-align: left;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .row-table th.right { text-align: right; }
+  .row-table td { padding: 6px 4px; }
+  .row-table td input {
+    width: 100%;
+    padding: 7px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .row-table td input:focus { border-color: var(--saffron); }
+  .row-table td input.auto {
+    background: var(--green-light);
+    color: var(--green);
+    font-weight: 600;
+    border-color: transparent;
+  }
+  .row-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    padding: 7px 8px;
+    white-space: nowrap;
+  }
+
+  .total-bar {
+    background: var(--ink);
+    color: white;
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+  }
+  .total-bar .label { font-size: 12px; font-weight: 500; opacity: 0.7; }
+  .total-bar .amount { font-size: 22px; font-weight: 700; font-family: 'Noto Serif', serif; }
+  .total-bar .words { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+
+  .btn-generate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px;
+    background: var(--saffron);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.18s;
+    box-shadow: 0 4px 16px rgba(232,118,26,0.35);
+  }
+  .btn-generate:hover {
+    background: var(--saffron-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(232,118,26,0.45);
+  }
+  .btn-generate:active { transform: translateY(0); }
+
+  /* PREVIEW PAGE */
+  .preview-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .preview-toolbar h2 {
+    font-family: 'Noto Serif', serif;
+    font-size: 20px;
+    color: var(--ink);
+  }
+  .btn-download {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 22px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    box-shadow: 0 2px 8px rgba(45,106,79,0.3);
+  }
+  .btn-download:hover { background: #1f5239; transform: translateY(-1px); }
+
+  .invoice-preview {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+    padding: 28px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 8.5px;
+    color: #000;
+    max-width: 595px;
+    margin: 0 auto;
+  }
+
+  /* INVOICE INTERNAL STYLES */
+  .inv-title {
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 2px;
+    border: 1px solid #000;
+    border-bottom: none;
+    padding: 3px;
+  }
+  .inv-outer { border: 1px solid #000; }
+  .inv-header-top {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid #000;
+  }
+  .inv-seller {
+    padding: 4px 6px;
+    border-right: 1px solid #000;
+    font-size: 7.5px;
+  }
+  .inv-seller .co-name { font-size: 10px; font-weight: bold; }
+  .inv-seller .prop { font-size: 7.5px; }
+  .inv-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .inv-meta-left { border-right: 1px solid #000; }
+  .inv-meta-cell {
+    padding: 3px 6px;
+    border-bottom: 1px solid #000;
+    font-size: 7.5px;
+  }
+  .inv-meta-cell .meta-label { font-weight: bold; }
+  .inv-consignee {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid #000;
+  }
+  .inv-consignee-left {
+    padding: 4px 6px;
+    border-right: 1px solid #000;
+    font-size: 7.5px;
+  }
+  .inv-consignee-right {
+    font-size: 7.5px;
+  }
+  .inv-buyer {
+    padding: 4px 6px;
+    border-bottom: 1px solid #000;
+    font-size: 7.5px;
+  }
+  .inv-table { width: 100%; border-collapse: collapse; }
+  .inv-table th, .inv-table td {
+    border: 1px solid #000;
+    border-top: none;
+    border-left: none;
+    padding: 3px 5px;
+    font-size: 7.5px;
+    vertical-align: middle;
+  }
+  .inv-table th:first-child, .inv-table td:first-child { border-left: 1px solid #000; }
+  .inv-table thead th { font-weight: bold; text-align: center; border-top: 1px solid #000; }
+  .inv-table .right { text-align: right; }
+  .inv-table .center { text-align: center; }
+  .inv-total-row td { font-weight: bold; }
+  .inv-words-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    border: 1px solid #000;
+    border-top: none;
+    font-size: 7.5px;
+  }
+  .inv-words-left { padding: 4px 6px; border-right: 1px solid #000; }
+  .inv-words-right { padding: 4px 8px; font-weight: bold; }
+  .inv-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid #000;
+    border-top: none;
+    font-size: 7.5px;
+  }
+  .inv-footer-left { padding: 6px; border-right: 1px solid #000; }
+  .inv-footer-right { padding: 6px; text-align: right; }
+  .inv-footer-right .bank-block { text-align: left; margin-bottom: 8px; }
+  .inv-bottom {
+    text-align: center;
+    border: 1px solid #000;
+    border-top: none;
+    padding: 3px;
+    font-size: 7px;
+    color: #555;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--green);
+    color: white;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  @media (max-width: 640px) {
+    .page { padding: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid.three { grid-template-columns: 1fr 1fr; }
+    .form-grid.four { grid-template-columns: 1fr 1fr; }
+    .span-2 { grid-column: span 1; }
+    .nav { padding: 0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-logo">🍊</div>
+    <div>
+      <div class="nav-title">Shri Radhakrishna Fruits</div>
+      <div class="nav-sub">Invoice Generator</div>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('form')">📝 Fill Details</button>
+    <button class="nav-tab" onclick="switchPage('preview')">👁 Preview & Download</button>
+  </div>
+</nav>
+
+<!-- FORM PAGE -->
+<div class="page active" id="page-form">
+  <div class="page-header">
+    <h1>New Invoice</h1>
+    <p>Fill in the delivery details below. Amounts are calculated automatically.</p>
+  </div>
+
+  <!-- Basic Info -->
+  <div class="section-card">
+    <div class="section-title">Invoice Info</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Invoice Date</label>
+        <input type="date" id="inv-date">
+      </div>
+      <div class="field">
+        <label>Invoice No.</label>
+        <input type="text" id="inv-no" value="1" placeholder="e.g. 1">
+      </div>
+      <div class="field">
+        <label>Vehicle No.</label>
+        <input type="text" id="vehicle-no" placeholder="e.g. MH19 CY 8201">
+      </div>
+      <div class="field">
+        <label>Despatch Doc No.</label>
+        <input type="text" id="despatch-doc" placeholder="e.g. MH15JC7700">
+      </div>
+    </div>
+  </div>
+
+  <!-- Weights -->
+  <div class="section-card">
+    <div class="section-title">Weight Details</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Net Weight (kg)</label>
+        <input type="number" id="net-wt" placeholder="e.g. 8940" oninput="calcAll()">
+      </div>
+      <div class="field">
+        <label>Empty Box (−)</label>
+        <input type="number" id="empty-box" placeholder="e.g. 623" oninput="calcAll()">
+      </div>
+      <div class="field">
+        <label>Net Wt (calculated)</label>
+        <input type="number" id="calc-wt" class="auto" readonly placeholder="Auto">
+      </div>
+    </div>
+  </div>
+
+  <!-- Line Items -->
+  <div class="section-card">
+    <div class="section-title">Line Items</div>
+    <table class="row-table">
+      <thead>
+        <tr>
+          <th style="width:120px">Item</th>
+          <th>Quantity / Wt</th>
+          <th>Rate (₹)</th>
+          <th class="right">Amount (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-label">Wt</td>
+          <td><input type="number" id="wt-qty" placeholder="8317" oninput="calcAll()"></td>
+          <td><input type="number" id="wt-rate" placeholder="21.00" step="0.01" oninput="calcAll()"></td>
+          <td><input class="auto" type="number" id="wt-amt" readonly></td>
+        </tr>
+        <tr>
+          <td class="row-label">Wastage [+]</td>
+          <td><input type="number" id="waste-qty" placeholder="90" oninput="calcAll()"></td>
+          <td><input type="number" id="waste-rate" placeholder="21.00" step="0.01" oninput="calcAll()"></td>
+          <td><input class="auto" type="number" id="waste-amt" readonly></td>
+        </tr>
+        <tr>
+          <td class="row-label">Stuck 7Y [+]</td>
+          <td><input type="number" id="stuck-qty" placeholder="588.49" step="0.01" oninput="calcAll()"></td>
+          <td><input type="number" id="stuck-rate" placeholder="21.00" step="0.01" oninput="calcAll()"></td>
+          <td><input class="auto" type="number" id="stuck-amt" readonly></td>
+        </tr>
+        <tr>
+          <td class="row-label">Service Charge</td>
+          <td><input type="number" id="svc-qty" placeholder="8099" oninput="calcAll()"></td>
+          <td><input type="number" id="svc-rate" placeholder="2.75" step="0.01" oninput="calcAll()"></td>
+          <td><input class="auto" type="number" id="svc-amt" readonly></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="total-bar">
+      <div>
+        <div class="label">TOTAL AMOUNT</div>
+        <div class="words" id="total-words">—</div>
+      </div>
+      <div class="amount" id="total-display">₹ 0</div>
+    </div>
+  </div>
+
+  <button class="btn-generate" onclick="generateAndPreview()">
+    <span style="font-size:20px">📄</span>
+    Generate Invoice PDF
+  </button>
+</div>
+
+<!-- PREVIEW PAGE -->
+<div class="page" id="page-preview">
+  <div class="preview-toolbar">
+    <h2>Invoice Preview</h2>
+    <button class="btn-download" onclick="downloadPDF()">
+      ⬇ Download PDF
+    </button>
+  </div>
+
+  <div class="invoice-preview" id="invoice-preview">
+    <!-- Generated dynamically -->
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── NUMBER TO WORDS ─────────────────────────────────────────────────────────
+const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine',
+  'Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen',
+  'Eighteen','Nineteen'];
+const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+
+function numToWords(n) {
+  n = Math.round(n);
+  if (n === 0) return 'Zero';
+  if (n < 0) return 'Minus ' + numToWords(-n);
+  let w = '';
+  if (n >= 100000) { w += numToWords(Math.floor(n/100000)) + ' Lakh '; n %= 100000; }
+  if (n >= 1000)   { w += numToWords(Math.floor(n/1000)) + ' Thousand '; n %= 1000; }
+  if (n >= 100)    { w += ones[Math.floor(n/100)] + ' Hundred '; n %= 100; }
+  if (n >= 20)     { w += tens[Math.floor(n/10)] + ' '; n %= 10; }
+  if (n > 0)       { w += ones[n] + ' '; }
+  return w.trim();
+}
+
+function amountWords(n) {
+  const r = Math.round(n);
+  return 'INR ' + numToWords(r) + ' Only';
+}
+
+// ─── CALCULATIONS ─────────────────────────────────────────────────────────────
+function v(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function set(id, val) { document.getElementById(id).value = val !== 0 ? val.toFixed(2) : ''; }
+
+function calcAll() {
+  const netWt = v('net-wt');
+  const emptyBox = v('empty-box');
+  const calcWt = netWt - emptyBox;
+  document.getElementById('calc-wt').value = calcWt > 0 ? calcWt : '';
+
+  const wtAmt   = v('wt-qty')    * v('wt-rate');
+  const wasteAmt = v('waste-qty') * v('waste-rate');
+  const stuckAmt = v('stuck-qty') * v('stuck-rate');
+  const svcAmt   = v('svc-qty')   * v('svc-rate');
+
+  set('wt-amt', wtAmt);
+  set('waste-amt', wasteAmt);
+  set('stuck-amt', stuckAmt);
+  set('svc-amt', svcAmt);
+
+  const total = wtAmt + wasteAmt + stuckAmt + svcAmt;
+  document.getElementById('total-display').textContent = '₹ ' + Math.round(total).toLocaleString('en-IN');
+  document.getElementById('total-words').textContent = total > 0 ? amountWords(total) : '—';
+}
+
+// ─── PAGE SWITCHING ───────────────────────────────────────────────────────────
+function switchPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  document.querySelectorAll('.nav-tab')[p === 'form' ? 0 : 1].classList.add('active');
+}
+
+// ─── COLLECT DATA ─────────────────────────────────────────────────────────────
+function collectData() {
+  const dateRaw = document.getElementById('inv-date').value;
+  let dateFormatted = dateRaw;
+  if (dateRaw) {
+    const d = new Date(dateRaw);
+    dateFormatted = d.toLocaleDateString('en-IN', {day:'2-digit',month:'2-digit',year:'2-digit'}).replace(/\//g,'-');
+  }
+
+  const wtAmt   = v('wt-qty')    * v('wt-rate');
+  const wasteAmt = v('waste-qty') * v('waste-rate');
+  const stuckAmt = v('stuck-qty') * v('stuck-rate');
+  const svcAmt   = v('svc-qty')   * v('svc-rate');
+  const total = wtAmt + wasteAmt + stuckAmt + svcAmt;
+
+  return {
+    invDate: dateFormatted || '—',
+    invNo: document.getElementById('inv-no').value || '1',
+    vehicleNo: document.getElementById('vehicle-no').value || '',
+    despatchDoc: document.getElementById('despatch-doc').value || '',
+    netWt: v('net-wt'),
+    emptyBox: v('empty-box'),
+    calcWt: v('net-wt') - v('empty-box'),
+    wtQty: v('wt-qty'), wtRate: v('wt-rate'), wtAmt,
+    wasteQty: v('waste-qty'), wasteRate: v('waste-rate'), wasteAmt,
+    stuckQty: v('stuck-qty'), stuckRate: v('stuck-rate'), stuckAmt,
+    svcQty: v('svc-qty'), svcRate: v('svc-rate'), svcAmt,
+    total,
+    totalWords: amountWords(total)
+  };
+}
+
+// ─── BUILD PREVIEW HTML ───────────────────────────────────────────────────────
+function buildPreviewHTML(d) {
+  const fmt = n => n ? n.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+  const fmtI = n => n ? Math.round(n).toLocaleString('en-IN') : '';
+
+  return `
+  <div class="inv-title">Tax Invoice</div>
+  <div class="inv-outer">
+    <!-- HEADER: Seller | Meta -->
+    <div class="inv-header-top">
+      <div class="inv-seller">
+        <div class="co-name">SHRI RADHAKRISHNA FRUITS COMPANY</div>
+        <div class="prop">NACHANKHEDA (M P)</div>
+        <div class="prop">PROP: SHRI CHETANYA MAHAJAN</div>
+        <div class="prop">MOBILE NO 8319871048</div>
+        <div class="prop">State Name : &nbsp;&nbsp; Code :</div>
+      </div>
+      <div class="inv-meta">
+        <div class="inv-meta-left">
+          <div class="inv-meta-cell"><span class="meta-label">Invoice No.</span><br>${d.invNo}</div>
+          <div class="inv-meta-cell"><span class="meta-label">Delivery Note</span><br></div>
+          <div class="inv-meta-cell"><span class="meta-label">Supplier's Ref.</span><br></div>
+          <div class="inv-meta-cell"><span class="meta-label">Buyer's Order No.</span><br></div>
+          <div class="inv-meta-cell"><span class="meta-label">Despatch Document No.</span><br></div>
+          <div class="inv-meta-cell"><span class="meta-label">Despatched through</span><br>${d.vehicleNo}</div>
+          <div class="inv-meta-cell" style="border-bottom:none"><span class="meta-label">Terms of Delivery</span></div>
+        </div>
+        <div>
+          <div class="inv-meta-cell"><span class="meta-label">Dated</span><br>${d.invDate}</div>
+          <div class="inv-meta-cell"><span class="meta-label">Mode/Terms of Payment</span><br></div>
+          <div class="inv-meta-cell"><span class="meta-label">Other Reference(s)</span><br></div>
+          <div class="inv-meta-cell"><span class="meta-label">Dated</span><br></div>
+          <div class="inv-meta-cell"><span class="meta-label">Delivery Note Date</span><br></div>
+          <div class="inv-meta-cell"><span class="meta-label">Destination</span><br></div>
+          <div class="inv-meta-cell" style="border-bottom:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONSIGNEE -->
+    <div class="inv-consignee">
+      <div class="inv-consignee-left">
+        <b>Consignee</b><br>
+        FAUJI EXIM PRIVATE LIMITED<br>
+        State Name : Maharashtra, Code : 27
+      </div>
+      <div class="inv-consignee-right">
+        <div class="inv-meta-cell">&nbsp;</div>
+        <div class="inv-meta-cell">&nbsp;</div>
+        <div class="inv-meta-cell">&nbsp;</div>
+        <div class="inv-meta-cell">&nbsp;</div>
+        <div class="inv-meta-cell" style="border-bottom:none">&nbsp;</div>
+      </div>
+    </div>
+
+    <!-- BUYER -->
+    <div class="inv-buyer" style="border-bottom:1px solid #000">
+      <b>Buyer (if other than consignee)</b><br>
+      FAUJI EXIM PRIVATE LIMITED<br>
+      State Name : Maharashtra, Code : 27
+    </div>
+
+    <!-- ITEMS TABLE -->
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th style="width:28px">Sl<br>No.</th>
+          <th style="width:90px">Description of<br>Goods</th>
+          <th style="width:42px">HSN/<br>SAC</th>
+          <th style="width:48px">Wt</th>
+          <th style="width:42px">Rate</th>
+          <th style="width:30px">per</th>
+          <th style="width:55px">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="center">1</td>
+          <td>Wet wt.</td>
+          <td></td>
+          <td class="right">${d.netWt || ''}</td>
+          <td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="center">2</td>
+          <td>Empty Box[-]</td>
+          <td></td>
+          <td class="right">${d.emptyBox || ''}</td>
+          <td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="center">3</td>
+          <td>Wt</td>
+          <td></td>
+          <td class="right">${d.wtQty || ''}</td>
+          <td class="right">${d.wtRate ? fmt(d.wtRate) : ''}</td>
+          <td></td>
+          <td class="right">${d.wtAmt ? fmt(d.wtAmt) : ''}</td>
+        </tr>
+        <tr>
+          <td class="center">4</td>
+          <td>Wastage</td>
+          <td></td>
+          <td class="right">${d.wasteQty || ''}</td>
+          <td class="right">${d.wasteRate ? fmt(d.wasteRate) : ''}</td>
+          <td></td>
+          <td class="right">${d.wasteAmt ? fmt(d.wasteAmt) : ''}</td>
+        </tr>
+        <tr>
+          <td class="center">5</td>
+          <td>Stuck 7Y</td>
+          <td></td>
+          <td class="right">${d.stuckQty || ''}</td>
+          <td class="right">${d.stuckRate ? fmt(d.stuckRate) : ''}</td>
+          <td></td>
+          <td class="right">${d.stuckAmt ? fmt(d.stuckAmt) : ''}</td>
+        </tr>
+        <tr>
+          <td class="center">6</td>
+          <td>Service Charge</td>
+          <td></td>
+          <td class="right">${d.svcQty || ''}</td>
+          <td class="right">${d.svcRate ? fmt(d.svcRate) : ''}</td>
+          <td></td>
+          <td class="right">${d.svcAmt ? fmt(d.svcAmt) : ''}</td>
+        </tr>
+        <tr class="inv-total-row" style="background:#f5f5f5">
+          <td></td>
+          <td style="font-weight:bold">Total</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td style="font-weight:bold">₹</td>
+          <td class="right" style="font-weight:bold">${fmtI(d.total)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- AMOUNT IN WORDS -->
+    <div class="inv-words-row">
+      <div class="inv-words-left">
+        <b>Amount Chargeable (in words)</b><br>
+        ${d.totalWords}
+      </div>
+      <div class="inv-words-right">E. &amp; O.E</div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="inv-footer">
+      <div class="inv-footer-left">
+        <b>Declaration</b><br>
+        We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
+      </div>
+      <div class="inv-footer-right">
+        <div class="bank-block">
+          <b>Company's Bank Details</b><br>
+          Bank Name : AXIS BANK<br>
+          A/c No. : 924020014930178<br>
+          Branch &amp; IFS Code : BURHANPUR &amp; UTIB0000822
+        </div>
+        <b>for SHRI RADHAKRISHNA FRUITS COMPANY</b><br><br><br>
+        Authorised Signatory
+      </div>
+    </div>
+    <div class="inv-bottom">
+      SUBJECT TO BURHANPUR JURISDICTION &nbsp;|&nbsp; This is a Computer Generated Invoice
+    </div>
+  </div>`;
+}
+
+// ─── GENERATE & PREVIEW ───────────────────────────────────────────────────────
+function generateAndPreview() {
+  const d = collectData();
+  document.getElementById('invoice-preview').innerHTML = buildPreviewHTML(d);
+  switchPage('preview');
+  showToast('✅ Invoice generated successfully!');
+}
+
+// ─── DOWNLOAD PDF ─────────────────────────────────────────────────────────────
+function downloadPDF() {
+  const d = collectData();
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
+
+  const fmt  = n => n ? n.toFixed(2) : '';
+  const fmtI = n => n ? Math.round(n).toString() : '';
+
+  const PW = 595, PH = 842;
+  const L = 36, R = 504, CX = 270; // left, right, center-divide
+  let y = 0;
+
+  // ── helpers ──
+  const line  = (x1,y1,x2,y2) => { pdf.line(x1,y1,x2,y2); };
+  const rect  = (x,y,w,h) => pdf.rect(x,y,w,h,'S');
+  const text  = (t,x,yy,opts={}) => pdf.text(String(t),x,yy,opts);
+  const bold  = (t,x,yy,opts={}) => { pdf.setFont('helvetica','bold'); text(t,x,yy,opts); pdf.setFont('helvetica','normal'); };
+
+  pdf.setFont('helvetica','normal');
+  pdf.setFontSize(7.5);
+  pdf.setLineWidth(0.5);
+
+  // Title
+  pdf.setFontSize(11); pdf.setFont('helvetica','bold');
+  text('Tax Invoice', PW/2, 22, {align:'center'});
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5);
+
+  // Outer border
+  rect(L, 30, R-L, 660);
+
+  // ── SELLER block ──
+  const sellerR = 30; // top of outer box
+  pdf.setFontSize(9.5); pdf.setFont('helvetica','bold');
+  text('SHRI RADHAKRISHNA FRUITS COMPANY', L+4, 44);
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5);
+  text('NACHANKHEDA (M P)', L+4, 55);
+  text('PROP: SHRI CHETANYA MAHAJAN', L+4, 65);
+  text('MOBILE NO 8319871048', L+4, 75);
+  text('State Name :  , Code :', L+4, 85);
+
+  // Vertical divider between seller and meta columns
+  line(CX, 30, CX, 320);
+
+  // Meta right section – horizontal dividers and labels
+  const metaRows = [
+    ['Invoice No.', d.invNo, 'Dated', d.invDate],
+    ['Delivery Note', '', 'Mode/Terms of Payment', ''],
+    ["Supplier's Ref.", '', 'Other Reference(s)', ''],
+    ["Buyer's Order No.", '', 'Dated', ''],
+    ['Despatch Document No.', '', 'Delivery Note Date', ''],
+    ['Despatched through', d.vehicleNo, 'Destination', ''],
+    ['Terms of Delivery', '', '', ''],
+  ];
+  const metaMid = 386; // mid of right side
+  line(metaMid, 30, metaMid, 186);
+  let my = 30;
+  metaRows.forEach(([lbl1, val1, lbl2, val2], i) => {
+    const rh = 24;
+    if (i < metaRows.length - 1) line(CX, my + rh, R, my + rh);
+    pdf.setFont('helvetica','bold');
+    text(lbl1, CX+4, my+9);
+    pdf.setFont('helvetica','normal');
+    text(val1, CX+4, my+18);
+    if (lbl2) {
+      pdf.setFont('helvetica','bold');
+      text(lbl2, metaMid+4, my+9);
+      pdf.setFont('helvetica','normal');
+      text(val2, metaMid+4, my+18);
+    }
+    my += rh;
+  });
+
+  // Seller bottom border
+  line(L, 112, CX, 112);
+
+  // ── CONSIGNEE ──
+  line(L, 215, R, 215);
+  pdf.setFont('helvetica','bold'); text('Consignee', L+4, 126);
+  pdf.setFont('helvetica','normal');
+  text('FAUJI EXIM PRIVATE LIMITED', L+4, 137);
+  text('State Name : Maharashtra, Code : 27', L+4, 148);
+
+  // ── BUYER ──
+  line(L, 266, R, 266);
+  pdf.setFont('helvetica','bold'); text('Buyer (if other than consignee)', L+4, 227);
+  pdf.setFont('helvetica','normal');
+  text('FAUJI EXIM PRIVATE LIMITED', L+4, 238);
+  text('State Name : Maharashtra, Code : 27', L+4, 249);
+
+  // ── ITEMS TABLE header ──
+  const COL = { sl:49, desc:244, hsn:297, wt:350, rate:403, per:425, amt:504 };
+  line(L, 320, R, 320); // top of header
+  // column borders
+  [COL.sl, COL.desc, COL.hsn, COL.wt, COL.rate, COL.per].forEach(x => line(x, 320, x, 360));
+  line(L, 360, R, 360); // bottom of header
+
+  pdf.setFont('helvetica','bold');
+  text('Sl', L+5, 333); text('No.', L+5, 341);
+  text('Description of', COL.sl+5, 333); text('Goods', COL.sl+5, 341);
+  text('HSN/', COL.desc+5, 333); text('SAC', COL.desc+5, 341);
+  text('Wt', COL.hsn+5, 337);
+  text('Rate', COL.wt+5, 337);
+  text('per', COL.rate+5, 337);
+  text('Amount', COL.per+5, 337);
+  pdf.setFont('helvetica','normal');
+
+  // ── ITEMS rows ──
+  const rows = [
+    ['1', 'Wet wt.', '', d.netWt||'', '', '', ''],
+    ['2', 'Empty Box[-]', '', d.emptyBox||'', '', '', ''],
+    ['3', 'Wt', '', d.wtQty||'', fmt(d.wtRate), '', fmt(d.wtAmt)],
+    ['4', 'Wastage', '', d.wasteQty||'', fmt(d.wasteRate), '', fmt(d.wasteAmt)],
+    ['5', 'Stuck 7Y', '', d.stuckQty||'', fmt(d.stuckRate), '', fmt(d.stuckAmt)],
+    ['6', 'Service Charge', '', d.svcQty||'', fmt(d.svcRate), '', fmt(d.svcAmt)],
+  ];
+  let ry = 360;
+  const ROW_H = 28;
+  // vertical lines for item area
+  [COL.sl, COL.desc, COL.hsn, COL.wt, COL.rate, COL.per].forEach(x => line(x, 360, x, 360 + rows.length * ROW_H));
+
+  rows.forEach(([sl, desc, hsn, wt, rate, per, amt]) => {
+    line(L, ry + ROW_H, R, ry + ROW_H);
+    text(sl, L+5, ry+16);
+    text(desc, COL.sl+4, ry+16);
+    if (wt) text(String(wt), COL.wt-4, ry+16, {align:'right'});
+    if (rate) text(rate, COL.rate-4, ry+16, {align:'right'});
+    if (amt) text(amt, R-4, ry+16, {align:'right'});
+    ry += ROW_H;
+  });
+
+  // Total row
+  [COL.sl, COL.desc, COL.hsn, COL.wt, COL.rate, COL.per].forEach(x => line(x, ry, x, ry+20));
+  pdf.setFont('helvetica','bold');
+  text('Total', COL.sl+4, ry+13);
+  text('₹', COL.rate+4, ry+13);
+  text(fmtI(d.total), R-4, ry+13, {align:'right'});
+  pdf.setFont('helvetica','normal');
+  ry += 20;
+  line(L, ry, R, ry);
+
+  // ── AMOUNT IN WORDS ──
+  line(L, ry+28, R, ry+28);
+  line(460, ry, 460, ry+28);
+  pdf.setFont('helvetica','bold'); text('Amount Chargeable (in words)', L+4, ry+9);
+  pdf.setFont('helvetica','normal');
+  // word wrap
+  const wordsLines = pdf.splitTextToSize(d.totalWords, 410);
+  pdf.text(wordsLines, L+4, ry+18);
+  text('E. & O.E', R-4, ry+12, {align:'right'});
+  ry += 28;
+
+  // ── FOOTER ──
+  const footerTop = ry, footerH = 80;
+  line(L, footerTop+footerH, R, footerTop+footerH);
+  line(CX, footerTop, CX, footerTop+footerH);
+
+  pdf.setFont('helvetica','bold'); text('Declaration', L+4, footerTop+10);
+  pdf.setFont('helvetica','normal');
+  const decl = pdf.splitTextToSize('We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.', CX-L-8);
+  pdf.text(decl, L+4, footerTop+20);
+
+  // Bank details (right side)
+  pdf.setFont('helvetica','bold'); text("Company's Bank Details", CX+4, footerTop+10);
+  pdf.setFont('helvetica','normal');
+  text('Bank Name : AXIS BANK', CX+4, footerTop+20);
+  text('A/c No. : 924020014930178', CX+4, footerTop+30);
+  text('Branch & IFS Code : BURHANPUR & UTIB0000822', CX+4, footerTop+40);
+
+  pdf.setFont('helvetica','bold');
+  text('for SHRI RADHAKRISHNA FRUITS COMPANY', CX+4, footerTop+55);
+  text('Authorised Signatory', R-4, footerTop+75, {align:'right'});
+  pdf.setFont('helvetica','normal');
+
+  // ── BOTTOM ──
+  const bTop = footerTop + footerH;
+  line(L, bTop+15, R, bTop+15);
+  pdf.setFontSize(7);
+  text('SUBJECT TO BURHANPUR JURISDICTION  |  This is a Computer Generated Invoice', PW/2, bTop+9, {align:'center'});
+
+  // Save
+  const fname = `Invoice_${d.invNo}_${d.invDate.replace(/-/g,'')}.pdf`;
+  pdf.save(fname);
+  showToast('⬇ Downloading PDF...');
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─── INIT: set today's date ───────────────────────────────────────────────────
+window.onload = () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('inv-date').value = today;
+  calcAll();
+};
+</script>
+</body>
+</html>
